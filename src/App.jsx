@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, createContext, useContext } from "rea
 // ─── FONTS & BASE ─────────────────────────────────────────────────
 const SERIF = "'Libre Baskerville', 'Times New Roman', Georgia, serif";
 const MONO = "'Courier New', monospace";
-const STORE_KEY = "theboard_v4";
 
 // ─── THEME CONTEXT ────────────────────────────────────────────────
 const ThemeContext = createContext("dark");
@@ -145,9 +144,37 @@ const GOAL_TYPES = [
   { id: "life", label: "Lifetime", color: "#608060" },
 ];
 
-// ─── STORAGE ──────────────────────────────────────────────────────
-function loadData() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; } }
-function saveData(d) { try { localStorage.setItem(STORE_KEY, JSON.stringify(d)); } catch { } }
+// ─── STORAGE — Neon Postgres via API ──────────────────────────────
+const STORE_KEY = "theboard_v4";
+
+// Generate or retrieve a persistent user ID for this device
+function getUserId() {
+  let id = localStorage.getItem("theboard_user_id");
+  if (!id) {
+    id = "user_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem("theboard_user_id", id);
+  }
+  return id;
+}
+
+// localStorage used only as offline cache
+function loadLocalCache() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; } }
+function saveLocalCache(d) { try { localStorage.setItem(STORE_KEY, JSON.stringify(d)); } catch { } }
+
+async function loadFromDB(userId) {
+  const res = await fetch(`/api/load?userId=${userId}`);
+  if (!res.ok) throw new Error("Load failed");
+  const { data } = await res.json();
+  return data || {};
+}
+
+async function saveToDB(userId, data) {
+  await fetch("/api/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, data }),
+  });
+}
 
 // ─── CONFETTI ─────────────────────────────────────────────────────
 function spawnConfetti() {
@@ -609,14 +636,53 @@ function ThemeToggle({ theme, setTheme }) {
 
 // ─── MAIN ─────────────────────────────────────────────────────────
 export default function TheBoard() {
-  const [data, setData] = useState(loadData);
+  const [data, setData] = useState(loadLocalCache); // start from cache instantly
   const [theme, setTheme] = useState(() => localStorage.getItem("theboard_theme") || "dark");
+  const [synced, setSynced] = useState(false);  // true once DB loaded
+  const [syncing, setSyncing] = useState(false);  // true while saving
+  const userId = getUserId();
 
-  const update = useCallback(fn => {
-    setData(prev => { const next = typeof fn === "function" ? fn(prev) : fn; saveData(next); return next; });
+  // Load from DB on mount — replaces local cache with latest
+  useEffect(() => {
+    loadFromDB(userId)
+      .then(dbData => {
+        setData(dbData);
+        saveLocalCache(dbData);
+        setSynced(true);
+      })
+      .catch(() => {
+        // Offline — use local cache silently, still works
+        setSynced(true);
+      });
   }, []);
 
-  // Persist theme choice
+  // Debounced save — waits 1.5s after last change before hitting DB
+  const saveTimer = useCallback(
+    (() => {
+      let timer;
+      return (d) => {
+        clearTimeout(timer);
+        setSyncing(true);
+        timer = setTimeout(() => {
+          saveToDB(userId, d)
+            .catch(() => { }) // silent fail — local cache still has it
+            .finally(() => setSyncing(false));
+        }, 1500);
+      };
+    })(),
+    [userId]
+  );
+
+  const update = useCallback(fn => {
+    setData(prev => {
+      const next = typeof fn === "function" ? fn(prev) : fn;
+      saveLocalCache(next); // instant local save
+      saveTimer(next);      // async DB save
+      return next;
+    });
+  }, [saveTimer]);
+
+  // Persist theme
   useEffect(() => { localStorage.setItem("theboard_theme", theme); }, [theme]);
 
   useEffect(() => {
@@ -666,6 +732,10 @@ export default function TheBoard() {
                 <ThemeToggle theme={theme} setTheme={setTheme} />
                 <div style={{ fontFamily: MONO, fontSize: "10px", color: t.textMuted }}>
                   {new Date().toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric", year: "numeric" })}
+                </div>
+                {/* Sync status */}
+                <div style={{ fontFamily: MONO, fontSize: "9px", color: syncing ? t.accentSub : synced ? t.textFaint : t.textFaint, letterSpacing: "0.5px" }}>
+                  {syncing ? "⟳ Saving…" : synced ? "✓ Synced" : "○ Loading…"}
                 </div>
               </div>
             </div>
