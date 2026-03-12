@@ -598,7 +598,7 @@ function DailyQuote() {
       const c = JSON.parse(localStorage.getItem("zenquote_cache") || "{}");
       if (c.dateKey === key && c.quote?.text) return;
     } catch { }
-    fetch("https://zenquotes.io/api/random")
+    fetch("/api/quote")
       .then(r => r.json())
       .then(d => { if (d?.[0]?.q) { const q = { text: d[0].q, author: d[0].a }; setQuote(q); localStorage.setItem("zenquote_cache", JSON.stringify({ dateKey: key, quote: q })); } })
       .catch(() => { });
