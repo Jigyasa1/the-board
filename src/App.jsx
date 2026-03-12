@@ -612,6 +612,109 @@ function DailyQuote() {
   );
 }
 
+// ─── SETTINGS PANEL ───────────────────────────────────────────────
+function SettingsPanel({ onClose, theme }) {
+  const t = THEMES[theme];
+  const currentId = getUserId();
+  const [inputId, setInputId] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  const copyId = () => {
+    navigator.clipboard.writeText(currentId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const applyId = () => {
+    const trimmed = inputId.trim();
+    if (!trimmed.startsWith("user_")) {
+      setError("Invalid ID — must start with user_");
+      return;
+    }
+    localStorage.setItem("theboard_user_id", trimmed);
+    setSaved(true);
+    setTimeout(() => window.location.reload(), 1000);
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
+      zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center",
+      padding: "20px",
+    }} onClick={onClose}>
+      <div style={{
+        background: t.bgCard, border: `1px solid ${t.borderStrong}`,
+        borderRadius: "8px", padding: "28px", width: "100%", maxWidth: "420px",
+        position: "relative",
+      }} onClick={e => e.stopPropagation()}>
+
+        {/* Close */}
+        <button onClick={onClose} style={{ position: "absolute", top: "16px", right: "16px", background: "none", border: "none", cursor: "pointer", color: t.textMuted, fontSize: "18px", lineHeight: 1 }}>×</button>
+
+        <div style={{ fontFamily: SERIF, fontSize: "18px", fontWeight: "700", color: t.textPrimary, marginBottom: "6px" }}>Sync Settings</div>
+        <div style={{ fontFamily: MONO, fontSize: "10px", color: t.textMuted, marginBottom: "24px", letterSpacing: "0.5px" }}>Use the same ID across all your devices to keep data in sync</div>
+
+        {/* Current ID */}
+        <div style={{ marginBottom: "24px" }}>
+          <div style={{ fontFamily: MONO, fontSize: "10px", color: t.textMuted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>Your Device ID</div>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <div style={{
+              flex: 1, background: t.bgCardInner, border: `1px solid ${t.border}`,
+              borderRadius: "4px", padding: "9px 12px",
+              fontFamily: MONO, fontSize: "11px", color: t.textSecondary,
+              wordBreak: "break-all", lineHeight: "1.5",
+            }}>{currentId}</div>
+            <button onClick={copyId} style={{
+              background: t.bgBtn, border: `1px solid ${t.border}`,
+              borderRadius: "4px", padding: "9px 14px", cursor: "pointer",
+              fontFamily: MONO, fontSize: "11px", color: copied ? t.accentHeader : t.textMuted,
+              whiteSpace: "nowrap", transition: "all 0.15s", flexShrink: 0,
+            }}>{copied ? "✓ Copied" : "Copy"}</button>
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: "10px", color: t.textMuted, marginTop: "8px" }}>
+            Copy this ID → paste it on your other device below
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: "1px", background: t.divider, marginBottom: "24px" }} />
+
+        {/* Paste ID from another device */}
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: "10px", color: t.textMuted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>Paste ID from another device</div>
+          <input
+            value={inputId}
+            onChange={e => { setInputId(e.target.value); setError(""); }}
+            placeholder="user_abc123..."
+            style={{
+              width: "100%", background: t.bgInput, border: `1px solid ${t.border}`,
+              borderRadius: "4px", outline: "none", padding: "9px 12px",
+              fontFamily: MONO, fontSize: "12px", color: t.textPrimary,
+              boxSizing: "border-box", marginBottom: "8px",
+              transition: "border-color 0.15s",
+            }}
+            onFocus={e => e.target.style.borderColor = t.borderFocus}
+            onBlur={e => e.target.style.borderColor = t.border}
+          />
+          {error && <div style={{ fontFamily: MONO, fontSize: "10px", color: "#c06060", marginBottom: "8px" }}>{error}</div>}
+          {saved && <div style={{ fontFamily: MONO, fontSize: "10px", color: "#60a060", marginBottom: "8px" }}>✓ Saved! Reloading…</div>}
+          <button onClick={applyId} style={{
+            width: "100%", background: t.accentHeader, color: "#fff",
+            border: "none", borderRadius: "4px", padding: "10px",
+            cursor: "pointer", fontFamily: MONO, fontSize: "12px",
+            fontWeight: "bold", letterSpacing: "0.5px",
+            opacity: inputId.trim() ? 1 : 0.4,
+            transition: "opacity 0.15s",
+          }}>Apply ID & Sync</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── THEME TOGGLE ─────────────────────────────────────────────────
 function ThemeToggle({ theme, setTheme }) {
   const t = THEMES[theme];
@@ -636,10 +739,11 @@ function ThemeToggle({ theme, setTheme }) {
 
 // ─── MAIN ─────────────────────────────────────────────────────────
 export default function TheBoard() {
-  const [data, setData] = useState(loadLocalCache); // start from cache instantly
+  const [data, setData] = useState(loadLocalCache);
   const [theme, setTheme] = useState(() => localStorage.getItem("theboard_theme") || "dark");
-  const [synced, setSynced] = useState(false);  // true once DB loaded
-  const [syncing, setSyncing] = useState(false);  // true while saving
+  const [synced, setSynced] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const userId = getUserId();
 
   // Load from DB on mount — replaces local cache with latest
@@ -721,6 +825,9 @@ export default function TheBoard() {
       <div style={{ minHeight: "100vh", background: t.bg, padding: "32px 24px 80px", fontFamily: SERIF, transition: "background 0.2s" }}>
         <div style={{ maxWidth: "720px", margin: "0 auto" }}>
 
+          {/* Settings panel */}
+          {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} theme={theme} />}
+
           {/* Header */}
           <div style={{ marginBottom: "32px", borderBottom: `1px solid ${t.divider}`, paddingBottom: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -729,11 +836,22 @@ export default function TheBoard() {
                 <div style={{ fontFamily: MONO, fontSize: "10px", color: t.accentSub, marginTop: "6px", letterSpacing: "2px", textTransform: "uppercase" }}>Personal Life Planner</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
-                <ThemeToggle theme={theme} setTheme={setTheme} />
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <ThemeToggle theme={theme} setTheme={setTheme} />
+                  {/* Settings button */}
+                  <button onClick={() => setShowSettings(true)} style={{
+                    background: t.bgBtn, border: `1px solid ${t.border}`,
+                    borderRadius: "20px", padding: "5px 12px",
+                    cursor: "pointer", fontFamily: MONO, fontSize: "11px", color: t.textMuted,
+                    transition: "all 0.2s",
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = t.borderStrong}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = t.border}
+                  >⚙ Sync</button>
+                </div>
                 <div style={{ fontFamily: MONO, fontSize: "10px", color: t.textMuted }}>
                   {new Date().toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric", year: "numeric" })}
                 </div>
-                {/* Sync status */}
                 <div style={{ fontFamily: MONO, fontSize: "9px", color: syncing ? t.accentSub : synced ? t.textFaint : t.textFaint, letterSpacing: "0.5px" }}>
                   {syncing ? "⟳ Saving…" : synced ? "✓ Synced" : "○ Loading…"}
                 </div>
