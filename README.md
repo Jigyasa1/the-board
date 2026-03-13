@@ -5,7 +5,7 @@
 
 ---
 
-## ✨ What is this?
+## What is this?
 
 **The Board** is a personal productivity app that replaces scattered notes, spreadsheets and to-do lists with one clean, organised space. It tracks everything that matters during a job search and life transition — applications, research, habits, goals and more.
 
@@ -13,7 +13,7 @@ Built as a personal tool. Not another generic to-do app.
 
 ---
 
-## 🗂️ Sections
+## Sections
 
 | Section | What it tracks |
 |---|---|
@@ -28,22 +28,22 @@ Built as a personal tool. Not another generic to-do app.
 
 ---
 
-## ⚡ Features
+## Features
 
-- ✅ **Cross-device sync** — data lives in the cloud, works on phone and laptop
-- 🌓 **Light / Dark theme** — warm earthy tones, toggles and saves your preference
-- 📊 **Progress bars** — per section, updates as you complete items
-- 🗃️ **Archive** — completed tasks move to a collapsible archive, not deleted
-- 🔀 **Drag to reorder** — organise tasks by priority within each section
-- 💬 **Daily quote** — fresh quote every day from ZenQuotes API
-- 🎉 **Confetti** — small celebration every time you complete a task
-- ⚙️ **Sync settings** — paste your user ID on any new device to instantly sync
-- 💾 **Auto-save** — every change saves to the database within 2 seconds
-- 📱 **Mobile ready** — add to home screen on iPhone or Android, works like a native app
+- **Cross-device sync** — data lives in the cloud, works on phone and laptop
+- **Light / Dark theme** — warm earthy tones, toggles and saves your preference
+- **Progress bars** — per section, updates as you complete items
+- **Archive** — completed tasks move to a collapsible archive, not deleted
+- **Drag to reorder** — organise tasks by priority within each section
+- **Daily quote** — fresh quote every day from ZenQuotes API
+- **Confetti** — small celebration every time you complete a task
+- **Sync settings** — paste your user ID on any new device to instantly sync
+- **Auto-save** — every change saves to the database within 2 seconds
+- **Mobile ready** — add to home screen on iPhone or Android, works like a native app
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -112,7 +112,7 @@ Vercel auto-deploys on every push to `main`. No extra configuration needed.
 
 ---
 
-## 🔄 Syncing Across Devices
+## Syncing Across Devices
 
 The app uses a **User ID** system — no login required.
 
@@ -126,7 +126,7 @@ Both devices now share the same data permanently.
 
 ---
 
-## 🗄️ Database Schema
+## Database Schema
 
 ```sql
 CREATE TABLE board_data (
@@ -140,7 +140,7 @@ Simple and flat — all app data stored as a single JSON blob per user. Easy to 
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 the-board/
@@ -158,7 +158,7 @@ the-board/
 
 ---
 
-## 🔐 Security Notes
+## Security Notes
 
 - No authentication — designed as a single-user personal tool
 - User ID is stored in localStorage — treat it like a password
@@ -168,7 +168,7 @@ the-board/
 
 ---
 
-## 🔜 Planned Improvements
+## Planned Improvements
 
 - [ ] History view — browse what your board looked like on any previous day
 - [ ] Multi-user auth — login system for sharing with others
